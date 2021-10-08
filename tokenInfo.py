@@ -19,18 +19,29 @@ from contract_addresses import *
 
 w3 = Web3(Web3.HTTPProvider(INFURA_URL))
 
-def getAbi(contractAddress):
-  response = requests.get(f"https://api.etherscan.io/api?module=contract&action=getabi&address={contractAddress}&apikey={ETHERSCAN_TOKEN}")
-  json_data = json.loads(response.text)
-  return((json_data['result']))
-
 def getContract(address):
   contract = w3.eth.contract(address=address, abi=getAbi(address))
   return contract
 
+
+def getAbi(contractAddress):
+    # try:
+    response = requests.get(f"https://api.etherscan.io/api?module=contract&action=getabi&address={contractAddress}&apikey={ETHERSCAN_TOKEN}")
+    # except(error):
+    #     print("an error has occured")
+    json_data = json.loads(response.text)
+    return((json_data['result']))
+
+# def compose2(f, g):
+#     return lambda x: f(g(x))
+
+# def compose(*functions):
+#     return functools.reduce(lambda f, g: lambda x: f(g(x)), functions, lambda x: x)
+
 def getTotalSupply(address):
   check = w3.toChecksumAddress(address)
-  contract = w3.eth.contract(address=check, abi=getAbi(address))
+  contract = getContract(address)
+#   contract = w3.eth.contract(address=check, abi=getAbi(address))
   execut = contract.functions.totalSupply().call()
   execut_rounded = int(execut/1000000000000000000)
 #   print(f'The current total supply is {execut_rounded}')
