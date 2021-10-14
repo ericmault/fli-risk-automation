@@ -3,10 +3,12 @@ import json
 from web3 import Web3
 from datetime import datetime
 import streamlit as st
-from config import INFURA_URL, ETHERSCAN_TOKEN
+# from config import INFURA_URL, ETHERSCAN_TOKEN
 from contract_addresses import *
 
+INFURA_URL = st.secrets["INFURA_URL"]
 
+ETHERSCAN_TOKEN = st.secrets["ETHERSCAN_TOKEN"]
 
 #   // Call the Tokensets API
 #   var response = UrlFetchApp.fetch("https://api.tokensets.com/v2/funds/ethfli");
