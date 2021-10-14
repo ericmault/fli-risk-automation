@@ -2,6 +2,7 @@ import requests
 import json
 from web3 import Web3
 from datetime import datetime
+import streamlit as st
 from config import INFURA_URL, ETHERSCAN_TOKEN
 from contract_addresses import *
 
@@ -38,6 +39,7 @@ def getAbi(contractAddress):
 # def compose(*functions):
 #     return functools.reduce(lambda f, g: lambda x: f(g(x)), functions, lambda x: x)
 
+@st.cache
 def getTotalSupply(address):
   check = w3.toChecksumAddress(address)
   contract = getContract(address)
@@ -46,7 +48,8 @@ def getTotalSupply(address):
   execut_rounded = int(execut/1000000000000000000)
 #   print(f'The current total supply is {execut_rounded}')
   return(execut_rounded)
-  
+
+@st.cache
 def getCurrentLeverageRatio(address):
   contract = w3.eth.contract(address=address, abi=getAbi(address))
   leverageRatio = contract.functions.getCurrentLeverageRatio().call()
@@ -65,7 +68,7 @@ def getCurrentLeverageRatio(address):
 #     bytes deleverExchangeData;                       // Arbitrary exchange data passed into rebalance function for delevering
 # }
 
-
+@st.cache
 def getExecution(address):
   contract = w3.eth.contract(address=address, abi=getAbi(address))
   execut = contract.functions.getExecution().call()
@@ -85,7 +88,7 @@ def getExecution(address):
 #     uint256 incentivizedTwapMaxTradeSize;            // Max trade size for incentivized rebalances in collateral base units
 # }
 
-
+@st.cache
 def getIncentive(address):
     #currently just returning the incentivizedLeverageRatio
     #
@@ -108,6 +111,7 @@ def getIncentive(address):
 #     uint256 rebalanceInterval;                       // Period of time required since last rebalance timestamp in seconds
 # }
 
+@st.cache
 def getMethodology(address):
   contract = w3.eth.contract(address=address, abi=getAbi(address))
   execut = contract.functions.getMethodology().call()
@@ -120,6 +124,7 @@ def getMethodology(address):
   rebalanceInterval = execut[4]/60
   return(f' targetleverage -> {targetLeverageRatio} minLevRatio -> {minLeverageRatio}, maxLevRatio -> {maxLeverageRatio}, recentingspeed -> {recenteringSpeed} rebalance interbal -> {rebalanceInterval}')
     
+@st.cache
 def getCurrentAndTotalSupply(address,address1):
   check = w3.toChecksumAddress(address)
   contract = w3.eth.contract(address=check, abi=getAbi(address))
@@ -132,7 +137,7 @@ def getCurrentAndTotalSupply(address,address1):
 #   print(f'The current supply is {current_supply} out of a max of {supply_cap}')
   return(f'{current_supply} / {supply_cap}')
 
-
+@st.cache
 def getSupplyCap(address):
   check = w3.toChecksumAddress(address)
   contract2 = w3.eth.contract(address=address, abi=getAbi(address))
