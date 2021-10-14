@@ -78,8 +78,6 @@ pyparsing==2.4.7
 pyrsistent==0.18.0
 python-dateutil==2.8.2
 pytz
-pywin32==301
-pywinpty==1.1.4
 pyzmq==22.3.0
 requests==2.26.0
 rlp==2.0.1
