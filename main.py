@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import altair as alt
-import streamlit as st
 import random
 import time
 from coinGeckoPrices import *
@@ -10,15 +9,6 @@ from contract_addresses import *
 from tokenInfo import *
 
 from urllib.error import URLError
-
-#ideas - make a radio button to see prices in collateral asset or in USD$
-# put values/results from calculations next to text as string rather than have seperate lines. Benefits to separate lines is the coloring and easy to copy
-#need some sort of control on if trade size is too big to the point where slippage is 1% that messes up the debt delever per trade
-# put button on side bar that says reset to current prices and then we can take away the current data from the top.
-#need way to make sure price impact liquidity is correct, because right now if you go to the max 
-    # tradesize on the spreadsheet (2200) where the current 1% depth is listed at 3000, the 2200 trade say it's 1% on the top chart
-#could put some of this data in tables rather than having it all one after the other
-
 
 st.title('FLI Risk Automation')
 ethFLISafeLR = 2.3 
@@ -29,71 +19,33 @@ timeBetweenTrades = 120
 productSelection = st.selectbox('Select', ["ETH2x-FLI","BTC2x-FLI"])
 
 if productSelection == "ETH2x-FLI":
+    collateral = "ETH"
+    borrowed = "USDC"
+    # ------ Current Data and Prices -------
+    ethFliPrice = coinGeckoPriceData(ETHFLI_COINGECKO_ID)
+    ethPrice = coinGeckoPriceData(ETH)
+    ethFliCurrentSupply = getTotalSupply(ETHFLI_TOKEN_ADDRESS)
+    sc = getSupplyCap(ETHFLI_SUPPLY_CAP_ISSUANCE_ADDRESS)
+    ethFliCurrentLeverageRatio = getCurrentLeverageRatio(ETHFLI_STRATEGY_ADAPTER_ADDRESS)
     
-    # ------ Current Data -------
     
     st.header('Current Data')
     left_column, right_column = st.columns(2)
-    # ## Left Column is ETH info ##
-    # # left_column.write(f"Coingecko ETH FLI Price is: "+str(coinGeckoPriceData(ETHFLI_COINGECKO_ID)))
-    # left_column.write("Coingecko ETH FLI Price is:")
-    # left_column.write(coinGeckoPriceData(ETHFLI_COINGECKO_ID))
-
-    # # left_column.write(f"Coingecko ETH Price is: "+str(coinGeckoPriceData(ETH)))
-    # left_column.write("Coingecko ETH Price is:")
-    # left_column.write(coinGeckoPriceData(ETH))
-
-    # # left_column.write(f"ETH FLI current supply is: "+str(getTotalSupply(ETHFLI_TOKEN_ADDRESS)))
-    # left_column.write("ETH FLI Current Supply is:")
-    # left_column.write(getTotalSupply(ETHFLI_TOKEN_ADDRESS))
-
-    # left_column.write("ETH FLI Current Leverage Ratio is:")
-    # left_column.write(getCurrentLeverageRatio(ETHFLI_STRATEGY_ADAPTER_ADDRESS))
-
-    # left_column.write("ETH FLI Supply Cap is:")
-    # left_column.write(getSupplyCap(ETHFLI_SUPPLY_CAP_ISSUANCE_ADDRESS))
     
-    
-    
-    # def writeAbstracted(value,string,value):
-    #     st.sidebar.write(string)
-    #     st.sidebar.write(value)
-        
-    # def Writecoingetckoprice(value,string,value):
-    #     st.sidebar.write(string)
-    #     st.sidebar.write(value)
-    
-    
-    #original
     left_column.write("Coingecko ETH FLI Price is:")
-    ethFliPrice = coinGeckoPriceData(ETHFLI_COINGECKO_ID)
     left_column.write(ethFliPrice)
     
-    
-    # #second
-    # ethFliPrice = coinGeckoPriceData(ETHFLI_COINGECKO_ID)
-    # writeAbstracted("Coingecko ETH FLI Price is:",ethFliPrice)
-    
-    # #thrid
-    # writeAbstracted("Coingecko ETH FLI Price is:",coinGeckoPriceData(ETHFLI_COINGECKO_ID))
-    
     right_column.write("Coingecko ETH Price is:")
-    ethPrice = coinGeckoPriceData(ETH)
     right_column.write(ethPrice)
 
     left_column.write("ETH FLI Current Supply is:")
-    ethFliCurrentSupply = getTotalSupply(ETHFLI_TOKEN_ADDRESS)
     left_column.write(ethFliCurrentSupply)
 
     right_column.write("ETH FLI Supply Cap is:")
-    sc = getSupplyCap(ETHFLI_SUPPLY_CAP_ISSUANCE_ADDRESS)
     right_column.write(sc)
 
     left_column.write("ETH FLI Current Leverage Ratio is:")
-    ethFliCurrentLeverageRatio = getCurrentLeverageRatio(ETHFLI_STRATEGY_ADAPTER_ADDRESS)
     left_column.write(ethFliCurrentLeverageRatio)
-
-
 
     # ------ Side Bar -------
 
@@ -103,70 +55,102 @@ if productSelection == "ETH2x-FLI":
     userInput_supply = st.sidebar.slider('ETH FLI Supply', min_value=(sc-10000), max_value=(sc+100000), value=sc, step=100)
     userDexSupplyDepth = st.sidebar.slider('1% Dex Supply Depth', min_value=(1000), max_value=(10000), value=2000, step=100)
     
-    
     # ------ Calculations -------
-    st.header('Calculations Based on Inputs from leftt bar')
-    
-
-    
-    st.write("post eth price percent change")
-    st.write(userInputEthPrice)
-    
-    st.write("current Collateral Notaional units:")
     collateralNotaionalUnits = ethFliPrice*ethFliCurrentLeverageRatio/userInputEthPrice*ethFliCurrentSupply
-    st.caption('current Collateral Notaional units = ethFliPrice x ethFliCurrentLeverageRatio/userInputEthPrice x ethFliCurrentSupply')
-    st.write(collateralNotaionalUnits)
-    
-    st.write("current Collateral Notaional Price:")
-    st.caption('current Collateral Notaional Price = collateralNotaionalUnits*ethPrice')
     collateralNotionalPrice = collateralNotaionalUnits*ethPrice
-    st.write(collateralNotionalPrice)
-    
-    st.write("current borrowed asset Notional Price:")
-    st.caption('current borrowed asset Notional Price = collateralNotionalPrice-ethFliPrice*ethFliCurrentSupply')
     borrowNotionalPrice = collateralNotionalPrice-ethFliPrice*ethFliCurrentSupply
-    st.write(borrowNotionalPrice)
-    
-    st.write("AUM")
-    st.caption('AUM = collateralNotionalPrice-borrowNotionalPrice')
     aum = collateralNotionalPrice-borrowNotionalPrice
-    st.write(aum)
     
-    st.write("Price Drop to Liquidation from current LR")
-    
+    ## NEED TO REVISIT HERE current equation is giving too high of a tolerable price drop
     endLR = 2.9
     diff = endLR - ethFliCurrentLeverageRatio
-    drop = diff/2
-    st.caption('(Max LR of 2.9 - current LR) / 2')
-    st.write(drop*100)
+    drop = (diff/2)*100
+    tempDrop = -0.22
     
-    newCollateralAssetPrice = ethPrice * (1-drop)
-    st.write("new Collateral Asset Price")
-    st.caption('ethPrice * (1-drop)')
-    st.write(newCollateralAssetPrice)
-
-
+    newCollateralAssetPrice = userInputEthPrice * (1+tempDrop)
     newCollateralNotionalValue = newCollateralAssetPrice *collateralNotaionalUnits
-    st.caption('newCollateralAssetPrice *collateralNotaionalUnits')
-    st.write(newCollateralNotionalValue)
-    
+    # below is equal to itself because 1$ = 1$
     newBorrowNotionalValue = borrowNotionalPrice
-    st.caption('newBorrowNotionalValue = borrowNotionalPrice')
-    st.write(newBorrowNotionalValue)
-    
     newAUM = newCollateralNotionalValue - newBorrowNotionalValue
-    st.caption('newCollateralNotionalValue - newBorrowNotionalValue')
-    st.write(newAUM)
-    
     newLR = newCollateralNotionalValue/newAUM
-    st.write("New Leverage Ratio")
-    st.caption('newCollateralNotionalValue/newAUM')
-    st.write(newLR)
-    
     lRDifference = newLR-ethFliCurrentLeverageRatio
-    st.write("Difference From Pervious leverage ratio")
-    st.caption('New Leverage Ratio - old leverage ratio')
-    st.write(lRDifference)
+    
+    
+    # ------ UI -------
+    st.header('Calculations Based on Inputs from left bar')
+    
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander(f"New {collateral} Price"):
+                st.caption(f"Current {collateral} Price \* Percent Change")
+        con_right_column.write(userInputEthPrice)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander(f"Current Collateral Notaional Units in {collateral}"):
+            st.caption(f"Current Collateral Notaional units = {collateral} FLI Price \* Current Leverage Ratio / New {collateral} Price \* Current Supply")
+        con_right_column.write(collateralNotaionalUnits)
+    
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Current Collateral Notaional Price:"):
+            st.caption(f'Current Collateral Notaional Price = Collateral Notaional Units x {collateral} Price')
+        con_right_column.write(collateralNotionalPrice)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Current Borrowed Asset Notional Price:"):
+            st.caption(f'Current Borrowed Asset Notional Price = collateralNotionalPrice - {collateral} FLI Price \* CurrentSupply')
+        con_right_column.write(borrowNotionalPrice)
+    
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("AUM"):
+            st.caption('AUM = collateralNotionalPrice-borrowNotionalPrice')
+        con_right_column.write(aum)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Percent Price Drop to Liquidation from current LR (currently fixed  to 22%)"):
+            st.caption('Max LR of 2.9 - current LR) / 2')
+        con_right_column.write(tempDrop)
+
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("new Collateral Asset Price"):
+            st.caption('ethPrice * (1-drop)')
+        con_right_column.write(newCollateralAssetPrice)
+
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("new Collateral Notional Value"):
+            st.caption('newCollateralAssetPrice *collateralNotaionalUnits')
+        con_right_column.write(newCollateralNotionalValue)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("new Borrow Notional Value"):
+            st.caption('newBorrowNotionalValue = borrowNotionalPrice')
+        con_right_column.write(newBorrowNotionalValue)
+    
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("newAUM"):
+            st.caption('newCollateralNotionalValue - newBorrowNotionalValue')
+        con_right_column.write(newAUM)
+
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("New Leverage Ratio"):
+            st.caption('newCollateralNotionalValue/newAUM')
+        con_right_column.write(newLR)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Difference From Pervious leverage ratio"):
+            st.caption('New Leverage Ratio - old leverage ratio')
+        con_right_column.write(lRDifference)
+
     
     # ----- safe LR -----
     st.write("Safe LR")
