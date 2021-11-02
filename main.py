@@ -74,6 +74,7 @@ if productSelection == "ETH2x-FLI":
     newAUM = newCollateralNotionalValue - newBorrowNotionalValue
     newLR = newCollateralNotionalValue/newAUM
     lRDifference = newLR-ethFliCurrentLeverageRatio
+    distanceToSafeLR = ethFLISafeLR-newLR
     
     
     # ------ UI -------
@@ -151,106 +152,120 @@ if productSelection == "ETH2x-FLI":
             st.caption('New Leverage Ratio - old leverage ratio')
         con_right_column.write(lRDifference)
 
-    
     # ----- safe LR -----
-    st.write("Safe LR")
-    st.write(ethFLISafeLR)
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Safe LR"):
+            st.caption('This is the max LR set by configurations, currenlty hard coded')
+        con_right_column.write(ethFLISafeLR)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Distance to safe LR"):
+            st.caption('newLR-ethFLISafeLR')
+        con_right_column.write(distanceToSafeLR)
     
-    distanceToSafeLR = newLR-ethFLISafeLR
-    st.write("Distance to safe LR")
-    st.caption('newLR-ethFLISafeLR')
-    st.write(distanceToSafeLR)
     
     # ------ Collateral Calculations -------
-    st.header('Collateral Calculataions')
+
     
     rebalanceSizeInCollateralAsset = (distanceToSafeLR/newLR)*collateralNotaionalUnits
-    st.write("Total Rebalance Size in Collateral Asset")
-    st.caption('Total Rebalance Size in Collateral Asset= (distanceToSafeLR/newLR)*collateralNotaionalUnits')
-    st.write(rebalanceSizeInCollateralAsset)
     rebalanceSizeInDollars = rebalanceSizeInCollateralAsset*newCollateralAssetPrice
-    st.caption(f'in dollars ${rebalanceSizeInDollars}')
-    
-    
-    st.write("Number of Trades Required For Rebalance Based on  user input max trade size")
-    st.caption('Trades Required For Rebalance = Total Rebalance Size in Collateral Asset/ max trade size')
     tradesRequired = rebalanceSizeInCollateralAsset/userInput_eth_max_trade_size_slider
-    st.write(tradesRequired)
-    
-    st.write("Trade Slippage based on 1% Dex supply")
-    st.caption('Trade Slippage based on 1% Dex supply = userInput Max Trade Size / 1% liquidity depth * 0.01 / Trade Size Scale')
     tradeSlippage = (userInput_eth_max_trade_size_slider/userDexSupplyDepth*0.01/tradeSizeScale)*100
-    st.write(tradeSlippage)
-    
-    st.caption(f'plus fees of {fees} for a total of {fees+tradeSlippage}')
-    
-    
-    st.write("Debt Delevered Per trade")
-    st.caption('min(userInput_eth_max_trade_size_slider/tradeSizeScale,rebalanceSizeInCollateralAsset)*(1-slippage and fees)*new collateral asset price')
     debtDeleveredPerTrade = min(userInput_eth_max_trade_size_slider*tradeSizeScale,rebalanceSizeInCollateralAsset)*((1-(fees+tradeSlippage))*newCollateralAssetPrice)
-    st.write(debtDeleveredPerTrade)
-    
-    st.write("Debt notional delevered")
-    st.caption('Debt notional delevered = total rebalance size in collateral asset * (1-slppage) * new collateral asset price')
     debtNotionalDelevered = rebalanceSizeInCollateralAsset * (1-tradeSlippage) * newCollateralAssetPrice
-    st.write(debtNotionalDelevered)
+
+    
+
+    # ------ Collateral UI -------
+    st.header('Collateral Calculataions')
+    
+    option = st.selectbox(
+    'View In',
+    ('Collateral/ETH', 'USDC')) 
+    
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Total Rebalance Size"):
+            st.caption('Total Rebalance Size in Collateral Asset= (distanceToSafeLR/newLR)*collateralNotaionalUnits')
+        if option == 'Collateral/ETH':
+            con_right_column.write(rebalanceSizeInCollateralAsset)
+        else:
+            con_right_column.write(f'${rebalanceSizeInDollars}')
+            
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Number of Trades Required For Rebalance Based on  user input max trade size"):
+            st.caption('Trades Required For Rebalance = Total Rebalance Size in Collateral Asset/ max trade size')
+            con_right_column.write(tradesRequired)
+
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Trade Slippage based on 1% Dex supply"):
+            st.caption('Trade Slippage based on 1% Dex supply = userInput Max Trade Size / 1% liquidity depth * 0.01 / Trade Size Scale')
+            con_right_column.write(fees+tradeSlippage)
+            con_right_column.caption(f'Trade slippage of {tradeSlippage} plus fees of {fees}')
+            
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+    with con_left_column.expander("Debt Delevered Per trade"):
+        st.caption('min(userInput_eth_max_trade_size_slider/tradeSizeScale,rebalanceSizeInCollateralAsset)*(1-slippage and fees)*new collateral asset price')
+        con_right_column.write(debtDeleveredPerTrade)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+    with con_left_column.expander("Debt notional delevered"):
+        st.caption('Debt notional delevered = total rebalance size in collateral asset * (1-slppage) * new collateral asset price')
+        con_right_column.write(debtNotionalDelevered)
     
     
+     # ------ Post Rebalance -------
     st.header("Post Rebalance")
     
-    st.write("Post Rebalance Collateral notaial units ")
-    st.caption('Post Rebalance Collateral notaial units = pre collateral - rebalance size')
     postRebalanceCollateralNotionalUnits = collateralNotaionalUnits - rebalanceSizeInCollateralAsset
-    st.write(postRebalanceCollateralNotionalUnits)
-    
     postRebalanceCollateralNotionalValue = postRebalanceCollateralNotionalUnits* newCollateralAssetPrice
-    st.caption(f'in dollars{postRebalanceCollateralNotionalValue}')
-    
-    
-    st.write("Post Rebalance Borrow notaial value ")
-    st.caption('Post Rebalance Borrow notaial value  = new borrow notiaonl value - debt notional delevered')
     postRebalanceBorrowedNotionalValue = newBorrowNotionalValue - debtNotionalDelevered
-    st.write(postRebalanceBorrowedNotionalValue)
-    
-    
-    st.write("Post Rebalance AUM")
-    st.caption('Post Rebalance AUM  = Collateral notional value - Borrow notional value')
     postRebalanceAUM = postRebalanceCollateralNotionalValue - postRebalanceBorrowedNotionalValue
-    st.write(postRebalanceAUM)
-    
-    st.write("Ending Leverage Ratio")
-    st.caption('Ending Leverage Ratio = Post Collateral notional value / Post AUM')
     endingLeverageRatio = postRebalanceCollateralNotionalUnits/postRebalanceAUM
-    st.write(endingLeverageRatio)
-    
-    st.write("Minutes to Complete Rebalance")
-    st.caption('Minutes to Complete Rebalance = trade size required for rebalance * time between trades/60')
     minutesToCompleteRebalance = tradesRequired*timeBetweenTrades/60
-    st.write(minutesToCompleteRebalance)
+    
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+        with con_left_column.expander("Post Rebalance Collateral notaial units"):
+            st.caption('Post Rebalance Collateral notaial units = pre collateral - rebalance size')
+        if option == 'Collateral/ETH':
+            con_right_column.write(postRebalanceCollateralNotionalUnits)
+        else:
+            con_right_column.write(f'${postRebalanceCollateralNotionalValue}')
+    
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+    with con_left_column.expander("Post Rebalance Borrow notaial value"):
+        st.caption('Post Rebalance Borrow notaial value  = new borrow notiaonl value - debt notional delevered')
+        con_right_column.write(postRebalanceBorrowedNotionalValue)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+    with con_left_column.expander("Post Rebalance AUM"):
+        st.caption('Post Rebalance AUM  = Collateral notional value - Borrow notional value')
+        con_right_column.write(postRebalanceAUM)
+        
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+    with con_left_column.expander("Ending Leverage Ratio"):
+        st.caption('Ending Leverage Ratio = Post Collateral notional value / Post AUM')
+        con_right_column.write(endingLeverageRatio)
+        
+    with st.container():
+        con_left_column, con_right_column = st.columns(2)
+    with con_left_column.expander("Minutes to Complete Rebalance"):
+        st.caption('Minutes to Complete Rebalance = trade size required for rebalance * time between trades/60')
+        con_right_column.write(minutesToCompleteRebalance)
 
     
-    
-    
-
 if productSelection == "BTC2x-FLI":
-# ## Right Column is BTC info
-# # right_column.write(f"Coingecko BTC FLI Price is: "+str(coinGeckoPriceData(BTCFLI_COINGECKO_ID)))
-#     right_column.write("Coingecko BTC FLI Price is")
-#     right_column.write(coinGeckoPriceData(BTCFLI_COINGECKO_ID))
-
-#     # right_column.write(f"Coingecko BTC Price is: "+str(coinGeckoPriceData(BTC)))
-#     right_column.write("Coingecko BTC Price is")
-#     right_column.write(coinGeckoPriceData(BTC))
-
-#     # right_column.write(f"BTC FLI current supply is: "+str(getTotalSupply(BTCFLI_TOKEN_ADDRESS)))
-#     right_column.write("BTC FLI Current Supply is:")
-#     right_column.write(getTotalSupply(BTCFLI_TOKEN_ADDRESS))
-
-#     right_column.write("BTC FLI Current Leverage Ratio is:")
-#     right_column.write(getCurrentLeverageRatio(BTCFLI_STRATEGY_ADAPTER_ADDRESS))
-
-#     right_column.write("BTC FLI Supply Cap is:")
-#     right_column.write(getSupplyCap(BTCFLI_SUPPLY_CAP_ISSUANCE_ADDRESS))
     
     st.write("Coingecko BTC FLI Price is")
     st.write(coinGeckoPriceData(BTCFLI_COINGECKO_ID))
@@ -272,8 +287,4 @@ if productSelection == "BTC2x-FLI":
 
 
 
-
-
 # st.button('Optimize')
-# st.checkbox('Check me out')
-# st.radio('Radio', [1,2,3])
