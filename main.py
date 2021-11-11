@@ -51,7 +51,7 @@ if productSelection == "ETH2x-FLI":
 
     priceChange = st.sidebar.number_input('Enter Price Change in %',min_value=-50,max_value=150,value=0,step=10)
     userInputEthPrice = (1+(priceChange/100))*ethPrice
-    userInput_eth_max_trade_size_slider = st.sidebar.slider('ETH Max Trade Size', min_value=400, max_value=2000, value=800, step=100)
+    userInput_eth_max_trade_size_slider = st.sidebar.slider('ETH Max Trade Size', min_value=400, max_value=10000, value=800, step=100)
     userInput_supply = st.sidebar.slider('ETH FLI Supply', min_value=(sc-10000), max_value=(sc+100000), value=sc, step=100)
     userDexSupplyDepth = st.sidebar.slider('1% Dex Supply Depth', min_value=(1000), max_value=(10000), value=10000, step=100)
     
